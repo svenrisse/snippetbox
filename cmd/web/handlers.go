@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -27,25 +26,25 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "%+v\n", snippet)
 	}
 
-	files := []string{
-		"./ui/html/base.tmpl.html",
-		"./ui/html/partials/nav.tmpl.html",
-		"./ui/html/pages/home.tmpl.html",
-	}
-
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		log.Print(err.Error())
-		app.logger.Error(err.Error(), "method", r.Method, "uri", r.URL.RequestURI())
-		app.serverError(w, r, err)
-		return
-	}
-
-	err = ts.ExecuteTemplate(w, "base", nil)
-	if err != nil {
-		app.logger.Error(err.Error(), "method", r.Method, "uri", r.URL.RequestURI())
-		app.serverError(w, r, err)
-	}
+	// 	files := []string{
+	// 		"./ui/html/base.tmpl.html",
+	// 		"./ui/html/partials/nav.tmpl.html",
+	// 		"./ui/html/pages/home.tmpl.html",
+	// 	}
+	//
+	// 	ts, err := template.ParseFiles(files...)
+	// 	if err != nil {
+	// 		log.Print(err.Error())
+	// 		app.logger.Error(err.Error(), "method", r.Method, "uri", r.URL.RequestURI())
+	// 		app.serverError(w, r, err)
+	// 		return
+	// 	}
+	//
+	// 	err = ts.ExecuteTemplate(w, "base", nil)
+	// 	if err != nil {
+	// 		app.logger.Error(err.Error(), "method", r.Method, "uri", r.URL.RequestURI())
+	// 		app.serverError(w, r, err)
+	// 	}
 }
 
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +64,26 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "%+v", snippet)
+	files := []string{
+		"./ui/html/base.tmpl",
+		"./ui/html/partials/nav.tmpl",
+		"./ui/html/pages/view.tmpl",
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	data := templateData{
+		Snippet: snippet,
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		app.serverError(w, r, err)
+	}
 }
 
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
