@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/svenrisse/snippetbox/internal/models"
 	"github.com/svenrisse/snippetbox/internal/validator"
 )
@@ -32,17 +31,16 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
-	params := httprouter.ParamsFromContext(r.Context())
-	id, err := strconv.Atoi(params.ByName("id"))
+	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || id < 1 {
-		app.notFound(w)
+		http.NotFound(w, r)
 		return
 	}
 
 	snippet, err := app.snippets.Get(id)
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
-			app.notFound(w)
+			http.NotFound(w, r)
 		} else {
 			app.serverError(w, r, err)
 		}
@@ -103,7 +101,9 @@ type userSignupForm struct {
 }
 
 func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Display an HTML form for signing up a new user...")
+	data := app.newTemplateData(r)
+	data.Form = userSignupForm{}
+	app.render(w, r, http.StatusOK, "signup.tmpl", data)
 }
 
 func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
@@ -128,7 +128,23 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(w, "Create a new user")
+	err = app.users.Insert(form.Name, form.Email, form.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			form.AddFieldError("email", "Email address is already in use")
+
+			data := app.newTemplateData(r)
+			data.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl", data)
+		} else {
+			app.serverError(w, r, err)
+		}
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), "flash", "Your Signup was successfull. Please log in.")
+
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
