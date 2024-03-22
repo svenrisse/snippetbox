@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,16 +12,17 @@ import (
 )
 
 func TestHealthcheck(t *testing.T) {
-	rr := httptest.NewRecorder()
+	app := &application{
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
 
-	r, err := http.NewRequest(http.MethodGet, "/", nil)
+	ts := httptest.NewTLSServer(app.routes())
+	defer ts.Close()
+
+	rs, err := ts.Client().Get(ts.URL + "/healthcheck")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	healthcheck(rr, r)
-
-	rs := rr.Result()
 
 	assert.Equal(t, rs.StatusCode, http.StatusOK)
 
@@ -29,7 +31,6 @@ func TestHealthcheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	body = bytes.TrimSpace(body)
 
 	assert.Equal(t, string(body), "OK")
