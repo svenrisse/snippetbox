@@ -8,7 +8,7 @@ import (
 	"github.com/justinas/nosurf"
 )
 
-func secureHeaders(next http.Handler) http.Handler {
+func commonHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Security-Policy",
 			"default-src 'self'; style-src 'self' fonts.googleapis.com; font-src fonts.gstatic.com")
@@ -17,6 +17,8 @@ func secureHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "deny")
 		w.Header().Set("X-XSS-Protection", "0")
+
+		w.Header().Set("Server", "Go")
 
 		next.ServeHTTP(w, r)
 	})
