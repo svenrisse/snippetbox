@@ -1,37 +1,20 @@
 package main
 
 import (
-	"bytes"
-	"io"
-	"log/slog"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/svenrisse/snippetbox/internal/assert"
 )
 
 func TestHealthcheck(t *testing.T) {
-	app := &application{
-		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
-	}
+	app := newTestApplication(t)
 
-	ts := httptest.NewTLSServer(app.routes())
+	ts := newTestServer(t, app.routes())
 	defer ts.Close()
 
-	rs, err := ts.Client().Get(ts.URL + "/healthcheck")
-	if err != nil {
-		t.Fatal(err)
-	}
+	code, _, body := ts.get(t, "/healthcheck")
 
-	assert.Equal(t, rs.StatusCode, http.StatusOK)
-
-	defer rs.Body.Close()
-	body, err := io.ReadAll(rs.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	body = bytes.TrimSpace(body)
-
-	assert.Equal(t, string(body), "OK")
+	assert.Equal(t, code, http.StatusOK)
+	assert.Equal(t, body, "OK")
 }
