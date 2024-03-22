@@ -88,7 +88,7 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		}
 
 		if exists {
-			ctx := context.WithValue(r.Context(), itAuthenticatedContextKey, true)
+			ctx := context.WithValue(r.Context(), isAuthenticatedContextKey, true)
 			r = r.WithContext(ctx)
 		}
 		next.ServeHTTP(w, r)
